@@ -32,7 +32,8 @@ Each branch in each project is self-contained — its own Terraform state (`TF_S
 
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/c123be50-3cd4-4fcf-b0f6-56ca042fe4ff" />
 
-![Toystore project — repository layout](images/toystore-repo-layout.png)
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/81c2347f-4819-4adb-954a-9aec7f69ab47" />
+
 
 ## 3. Architecture
 
