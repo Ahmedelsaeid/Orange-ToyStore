@@ -1,0 +1,11 @@
+image: "mysql:8.4"
+storage:
+  size: 2Gi
+  storageClassName: standard
+auth:
+  rootPassword: ""
+  database: "appdb"
+  username: "appuser"
+  password: ""
+service:
+  port: 3306

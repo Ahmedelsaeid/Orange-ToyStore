@@ -1,0 +1,50 @@
+---
+- name: Create Helm install directory
+  ansible.builtin.file:
+    path: "{{ helm_install_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Check Helm
+  ansible.builtin.command:
+    cmd: "{{ helm_install_dir }}/helm version --short"
+  register: helm_check
+  changed_when: false
+  failed_when: false
+
+- name: Download Helm archive
+  ansible.builtin.get_url:
+    url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    dest: "/tmp/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    mode: "0644"
+  when: helm_check.rc != 0
+
+- name: Extract Helm
+  ansible.builtin.unarchive:
+    src: "/tmp/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    dest: /tmp
+    remote_src: true
+  when: helm_check.rc != 0
+
+- name: Install Helm binary
+  ansible.builtin.copy:
+    src: "/tmp/linux-amd64/helm"
+    dest: "{{ helm_install_dir }}/helm"
+    remote_src: true
+    mode: "0755"
+  when: helm_check.rc != 0
+
+- name: Verify Helm
+  ansible.builtin.command:
+    cmd: "{{ helm_install_dir }}/helm version --short"
+  changed_when: false
+
+- name: Remove Helm archive
+  ansible.builtin.file:
+    path: "/tmp/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    state: absent
+
+- name: Remove Helm extracted directory
+  ansible.builtin.file:
+    path: "/tmp/linux-amd64"
+    state: absent

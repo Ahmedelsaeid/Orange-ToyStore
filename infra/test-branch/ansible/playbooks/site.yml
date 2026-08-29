@@ -1,0 +1,9 @@
+---
+- name: Deploy MySQL Test
+  hosts: k8s
+  become: false
+  environment:
+    KUBECONFIG: "/home/gitlab-runner/.kube/config"
+    PATH: "/home/gitlab-runner/.local/bin:/usr/local/bin:/usr/bin:/bin"
+  roles:
+    - mysql

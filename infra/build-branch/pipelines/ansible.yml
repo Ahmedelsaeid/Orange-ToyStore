@@ -1,0 +1,12 @@
+ansible_configure:
+  stage: configure
+  tags:
+    - k8s
+  when: manual
+  allow_failure: false
+  needs: []
+  script:
+    - ansible --version
+    - cd ansible
+    - ANSIBLE_CONFIG=$PWD/ansible.cfg ansible-playbook --syntax-check playbooks/site.yml
+    - ANSIBLE_CONFIG=$PWD/ansible.cfg ansible-playbook playbooks/site.yml

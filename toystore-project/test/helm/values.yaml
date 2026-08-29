@@ -1,0 +1,10 @@
+image:
+  repository: "192.168.49.2:31972/toystore"
+  tag: "latest"
+namespace: "test"
+mysqlSecretName: "mysql-test-secret"
+mysqlServiceName: "mysql"
+dbName: "toystore"
+replicas: 1
+service:
+  port: 8080

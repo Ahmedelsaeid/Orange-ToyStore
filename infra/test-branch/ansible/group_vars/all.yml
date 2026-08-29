@@ -1,0 +1,4 @@
+mysql_image: "mysql:8.4"
+mysql_storage_size: "2Gi"
+mysql_database: "toystore"
+mysql_user: "appuser"

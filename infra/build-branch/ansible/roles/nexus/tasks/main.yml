@@ -1,0 +1,211 @@
+---
+- name: Verify kubectl is available
+  ansible.builtin.command: /usr/local/bin/kubectl version --client
+  changed_when: false
+
+- name: Verify Kubernetes cluster
+  ansible.builtin.command: /usr/local/bin/kubectl get node minikube
+  changed_when: false
+
+- name: Set Nexus URLs
+  ansible.builtin.set_fact:
+    nexus_url: "http://192.168.49.2:31971"
+    nexus_docker_url: "http://192.168.49.2:31972"
+
+- name: Wait for Nexus
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/"
+    method: GET
+    status_code: [200, 302]
+  register: nexus_health
+  retries: 30
+  delay: 10
+  until: nexus_health.status in [200, 302]
+
+- name: Read Nexus initial admin password
+  ansible.builtin.command: >
+    /usr/local/bin/kubectl -n build exec deployment/nexus -- cat /nexus-data/admin.password
+  register: nexus_initial_password
+  changed_when: false
+  no_log: true
+
+- name: Set Nexus admin password
+  ansible.builtin.set_fact:
+    nexus_admin_password: "{{ nexus_initial_password.stdout | trim }}"
+  no_log: true
+
+- name: Get Nexus repositories
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/repositories"
+    method: GET
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+    return_content: true
+  register: nexus_repositories
+  no_log: true
+
+- name: Create Docker hosted repository
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/repositories/docker/hosted"
+    method: POST
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    status_code: [201, 400]
+    body:
+      name: "docker-hosted"
+      online: true
+      storage: { blobStoreName: "default", strictContentTypeValidation: true, writePolicy: "ALLOW" }
+      docker: { v1Enabled: false, forceBasicAuth: true, httpPort: 8082 }
+  when: "'docker-hosted' not in (nexus_repositories.json | map(attribute='name') | list)"
+  no_log: true
+
+- name: Verify Docker hosted repository
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/repositories/docker-hosted"
+    method: GET
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  no_log: true
+
+- name: Get active security realms
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/security/realms/active"
+    method: GET
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+    return_content: true
+  register: active_realms
+  no_log: true
+
+- name: Enable Docker Bearer Token Realm
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/security/realms/active"
+    method: PUT
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    status_code: 204
+    body: "{{ (active_realms.json + ['DockerToken']) | unique }}"
+  when: "'DockerToken' not in active_realms.json"
+  no_log: true
+
+- name: Pause for realm activation
+  ansible.builtin.pause:
+    seconds: 5
+
+- name: Enable Nexus anonymous access
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/security/anonymous"
+    method: PUT
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    status_code: 200
+    body:
+      enabled: true
+      userId: "anonymous"
+      realmName: "NexusAuthorizingRealm"
+  no_log: true
+
+- name: Create custom role for Docker read access
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/security/roles"
+    method: POST
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    status_code: [200, 400]
+    body:
+      id: "docker-anon-read"
+      name: "docker-anon-read"
+      description: "Read access to docker-hosted repo"
+      privileges:
+        - "nx-repository-view-docker-docker-hosted-browse"
+        - "nx-repository-view-docker-docker-hosted-read"
+      roles: []
+  no_log: true
+
+- name: Get anonymous user
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/security/users?userId=anonymous"
+    method: GET
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+    return_content: true
+  register: anon_user
+  no_log: true
+
+- name: Attach docker-anon-read role to anonymous user
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/security/users/anonymous"
+    method: PUT
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    status_code: 204
+    body:
+      userId: "anonymous"
+      firstName: "{{ anon_user.json[0].firstName }}"
+      lastName: "{{ anon_user.json[0].lastName }}"
+      emailAddress: "{{ anon_user.json[0].emailAddress }}"
+      source: "default"
+      status: "{{ anon_user.json[0].status }}"
+      roles: "{{ (anon_user.json[0].roles + ['docker-anon-read']) | unique }}"
+  no_log: true
+
+- name: Get Nexus EULA disclaimer text
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/system/eula"
+    method: GET
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+    return_content: true
+  register: eula_current
+  no_log: true
+
+- name: Accept Nexus EULA
+  ansible.builtin.uri:
+    url: "{{ nexus_url }}/service/rest/v1/system/eula"
+    method: POST
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    status_code: [200, 204]
+    body:
+      accepted: true
+      disclaimer: "{{ eula_current.json.disclaimer }}"
+  when: not eula_current.json.accepted
+  no_log: true
+
+- name: Verify Nexus Docker endpoint
+  ansible.builtin.uri:
+    url: "{{ nexus_docker_url }}/v2/"
+    method: GET
+    status_code: [200, 401, 403]
+  register: nexus_docker_check
+  retries: 20
+  delay: 5
+  until: nexus_docker_check.status in [200, 401, 403]
+
+- name: Show result
+  ansible.builtin.debug:
+    msg:
+      - "Nexus UI: {{ nexus_url }}"
+      - "Docker Registry: {{ nexus_docker_url }}"

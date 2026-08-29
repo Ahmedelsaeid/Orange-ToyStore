@@ -1,0 +1,6 @@
+mysql_image: "mysql:8.4"
+mysql_root_password: ""
+mysql_database: "appdb"
+mysql_user: "appuser"
+mysql_password: ""
+mysql_storage_size: "2Gi"

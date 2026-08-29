@@ -1,0 +1,11 @@
+ansible_configure:
+  stage: configure
+  tags: [k8s]
+  when: manual
+  allow_failure: false
+  needs: [terraform_apply]
+  script:
+    - export ANSIBLE_CONFIG=$CI_PROJECT_DIR/ansible/ansible.cfg
+    - ansible --version
+    - ansible -i ansible/inventory/hosts.ini k8s -m ping
+    - ansible-playbook -i ansible/inventory/hosts.ini ansible/playbooks/site.yml -e "mysql_root_password=${MYSQL_ROOT_PASSWORD}" -e "mysql_password=${MYSQL_PASSWORD}"

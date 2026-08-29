@@ -1,0 +1,41 @@
+terraform_validate:
+  stage: validate
+  tags: [k8s]
+  when: manual
+  allow_failure: false
+  script:
+    - cd "$TF_ROOT"
+    - terraform version
+    - kubectl get nodes
+    - terraform fmt -check -recursive
+    - terraform init
+    - terraform validate
+
+terraform_plan:
+  stage: plan
+  tags: [k8s]
+  when: manual
+  allow_failure: false
+  needs: [terraform_validate]
+  script:
+    - cd "$TF_ROOT"
+    - terraform init
+    - terraform plan -out=tfplan
+    - terraform show -no-color tfplan > tfplan.txt
+  artifacts:
+    paths:
+      - terraform/tfplan
+      - terraform/tfplan.txt
+    expire_in: 1 day
+
+terraform_apply:
+  stage: apply
+  tags: [k8s]
+  when: manual
+  allow_failure: false
+  needs: [terraform_plan]
+  script:
+    - cd "$TF_ROOT"
+    - terraform init
+    - test -f tfplan
+    - terraform apply -auto-approve tfplan

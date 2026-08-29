@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: toystore
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: toystore
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 8080
+  type: NodePort

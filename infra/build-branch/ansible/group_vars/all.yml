@@ -1,0 +1,13 @@
+---
+nexus_namespace: "build"
+nexus_service_name: "nexus"
+
+nexus_web_port: 31971
+nexus_docker_node_port: 31972
+nexus_docker_connector_port: 8082
+
+nexus_admin_user: "admin"
+nexus_docker_repo_name: "docker-hosted"
+nexus_blob_store: "default"
+
+helm_version: "v3.19.4"
