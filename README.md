@@ -30,7 +30,8 @@ The work is split across **two GitLab projects**, on purpose:
 
 Each branch in each project is self-contained — its own Terraform state (`TF_STATE_NAME`), its own Ansible role, and (for `toystore`) its own full CI/CD pipeline. This keeps `build`/`dev`/`test` fully isolated from each other while reusing the same automation pattern.
 
-![Infra project — repository layout](images/infra-repo-layout.png)
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/c123be50-3cd4-4fcf-b0f6-56ca042fe4ff" />
+
 ![Toystore project — repository layout](images/toystore-repo-layout.png)
 
 ## 3. Architecture
