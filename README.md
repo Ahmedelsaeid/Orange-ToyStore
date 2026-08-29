@@ -420,18 +420,9 @@ Multi-line pipeline edits made through terminal `sed`/heredocs occasionally merg
     ├── infra-repo-layout.png
     └── toystore-repo-layout.png
 ```
+## 21
+<img width="1919" height="1030" alt="image" src="https://github.com/user-attachments/assets/3ba2bd73-f04c-4790-b027-11b78c9659ef" />
 
-## 21. Assignment Deliverables Checklist
-
-- [x] Private GitHub repository
-- [x] `README.md`
-- [x] Terraform scripts (build/dev/test)
-- [x] Ansible playbooks (build/dev/test)
-- [ ] `docker-compose.yml` — attach the file used to bring up GitLab CE on VM1
-- [x] GitLab CI files (`toystore-project/dev/.gitlab-ci.yml`, `.../test/.gitlab-ci.yml`)
-- [x] Helm charts (MySQL and Spring Boot application, both environments)
-- [x] Database initialization/import script (`toystore-test.sql`)
-- [x] Final presentation
 
 ## 22. Final Review Before Submission
 
